@@ -1,0 +1,579 @@
+openapi: 3.0.3
+info:
+  title: API调用记录系统
+  description: 一个用于记录和管理API调用信息的系统
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8080
+    description: 开发环境
+  - url: http://backend:8080
+    description: Docker环境
+
+tags:
+  - name: 认证
+    description: 用户认证相关接口
+  - name: 用户管理
+    description: 用户管理相关接口
+  - name: API记录
+    description: API调用记录相关接口
+
+paths:
+  # 认证相关接口
+  /api/auth/login:
+    post:
+      tags:
+        - 认证
+      summary: 用户登录
+      description: 验证用户名和密码，返回认证token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  description: 用户名
+                  example: "admin"
+                password:
+                  type: string
+                  description: 密码
+                  example: "admin"
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "登录成功"
+                  token:
+                    type: string
+                    description: Basic Auth token
+                    example: "YWRtaW46YWRtaW4="
+                  user:
+                    $ref: '#/components/schemas/UserInfo'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 认证失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/logout:
+    post:
+      tags:
+        - 认证
+      summary: 用户登出
+      description: 用户登出系统
+      responses:
+        '200':
+          description: 登出成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "登出成功"
+
+  /api/auth/verify:
+    post:
+      tags:
+        - 认证
+      summary: 验证token
+      description: 验证认证token的有效性
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+                  description: Basic Auth token
+                  example: "YWRtaW46YWRtaW4="
+      responses:
+        '200':
+          description: 验证结果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    description: token是否有效
+                  message:
+                    type: string
+                    description: 验证结果消息
+                  user:
+                    $ref: '#/components/schemas/UserInfo'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # 用户管理接口
+  /api/users/me:
+    get:
+      tags:
+        - 用户管理
+      summary: 获取当前用户信息
+      description: 根据用户名获取当前用户信息
+      parameters:
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 用户名
+          example: "admin"
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        '404':
+          description: 用户不存在
+
+  /api/users:
+    get:
+      tags:
+        - 用户管理
+      summary: 获取所有用户
+      description: 获取系统中所有用户列表
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInfo'
+
+  /api/users/{id}:
+    get:
+      tags:
+        - 用户管理
+      summary: 根据ID获取用户
+      description: 根据用户ID获取用户详细信息
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 用户ID
+          example: 1
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        '404':
+          description: 用户不存在
+
+  /api/users/{id}/update:
+    post:
+      tags:
+        - 用户管理
+      summary: 更新用户信息
+      description: 更新指定用户的信息
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 用户ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        '400':
+          description: 请求参数错误
+        '404':
+          description: 用户不存在
+
+  /api/users/{id}/change-password:
+    post:
+      tags:
+        - 用户管理
+      summary: 修改用户密码
+      description: 修改指定用户的密码
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 用户ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - oldPassword
+                - newPassword
+              properties:
+                oldPassword:
+                  type: string
+                  description: 原密码
+                newPassword:
+                  type: string
+                  description: 新密码
+      responses:
+        '200':
+          description: 密码修改成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "密码修改成功"
+        '400':
+          description: 请求参数错误或原密码错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/{id}/reset-password:
+    post:
+      tags:
+        - 用户管理
+      summary: 重置用户密码
+      description: 管理员重置指定用户的密码
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 用户ID
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - newPassword
+              properties:
+                newPassword:
+                  type: string
+                  description: 新密码
+      responses:
+        '200':
+          description: 密码重置成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "密码重置成功"
+        '400':
+          description: 请求参数错误
+        '404':
+          description: 用户不存在
+
+  /api/users/{id}/toggle-status:
+    post:
+      tags:
+        - 用户管理
+      summary: 切换用户状态
+      description: 启用或禁用指定用户
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 用户ID
+          example: 1
+      responses:
+        '200':
+          description: 状态切换成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        '400':
+          description: 请求参数错误
+        '404':
+          description: 用户不存在
+
+  /api/users/stats:
+    get:
+      tags:
+        - 用户管理
+      summary: 获取用户统计信息
+      description: 获取用户总数和活跃用户数等统计信息
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalUsers:
+                    type: integer
+                    description: 总用户数
+                    example: 10
+                  activeUsers:
+                    type: integer
+                    description: 活跃用户数
+                    example: 8
+                  lastUpdated:
+                    type: string
+                    format: date-time
+                    description: 最后更新时间
+
+  # API记录接口
+  /api/recorder:
+    post:
+      tags:
+        - API记录
+      summary: 记录API调用
+      description: 记录API调用的详细信息
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiCallRecord'
+      responses:
+        '201':
+          description: 记录创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiCallRecord'
+        '400':
+          description: 请求参数错误
+
+  /api/recorder/list:
+    get:
+      tags:
+        - API记录
+      summary: 获取API调用记录列表
+      description: 分页获取API调用记录
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: 页码（从0开始）
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: 每页大小
+        - name: method
+          in: query
+          schema:
+            type: string
+          description: HTTP方法过滤
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: 开始日期
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+          description: 结束日期
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApiCallRecord'
+                  totalElements:
+                    type: integer
+                    description: 总记录数
+                  totalPages:
+                    type: integer
+                    description: 总页数
+                  currentPage:
+                    type: integer
+                    description: 当前页
+
+components:
+  schemas:
+    UserInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 用户ID
+          example: 1
+        username:
+          type: string
+          description: 用户名
+          example: "admin"
+        email:
+          type: string
+          description: 邮箱
+          example: "admin@example.com"
+        fullName:
+          type: string
+          description: 全名
+          example: "系统管理员"
+        enabled:
+          type: boolean
+          description: 是否启用
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间
+        updatedAt:
+          type: string
+          format: date-time
+          description: 更新时间
+
+    UserUpdate:
+      type: object
+      properties:
+        email:
+          type: string
+          description: 邮箱
+        fullName:
+          type: string
+          description: 全名
+        enabled:
+          type: boolean
+          description: 是否启用
+
+    ApiCallRecord:
+      type: object
+      required:
+        - requestUrl
+        - httpMethod
+      properties:
+        id:
+          type: integer
+          description: 记录ID
+        requestUrl:
+          type: string
+          description: 请求URL
+          example: "https://api.example.com/users"
+        httpMethod:
+          type: string
+          description: HTTP方法
+          enum: [GET, POST, PUT, DELETE, PATCH, OPTIONS]
+          example: "POST"
+        requestBody:
+          type: string
+          description: 请求体内容
+        requestHeaders:
+          type: string
+          description: 请求头信息
+        callTime:
+          type: string
+          format: date-time
+          description: 调用时间
+        clientIp:
+          type: string
+          description: 客户端IP
+          example: "192.168.1.100"
+        userAgent:
+          type: string
+          description: 用户代理
+          example: "Mozilla/5.0..."
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          description: 错误消息
+          example: "操作失败"
+        error:
+          type: string
+          description: 详细错误信息
+
+security:
+  - BasicAuth: []
+
+components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+      description: Basic认证，用户名和密码用冒号分隔后进行Base64编码
