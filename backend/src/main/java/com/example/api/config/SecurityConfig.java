@@ -95,8 +95,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/recorder/**").permitAll()
                 // 允许访问Swagger文档
                 .antMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
-                // 其他API需要认证
+                // 用户管理API需要认证
                 .antMatchers("/users/**").authenticated()
+                // 其他API需要认证
                 .anyRequest().authenticated()
             .and()
             .httpBasic();

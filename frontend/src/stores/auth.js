@@ -66,6 +66,10 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('username')
       localStorage.removeItem('password')
+      
+      // 20250424131103 - fix 登出后跳转到登录页面
+      // 使用 window.location.href 确保完全跳转
+      window.location.href = '/login'
     }
   }
 

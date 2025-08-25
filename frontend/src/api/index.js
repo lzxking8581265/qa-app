@@ -2,9 +2,9 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import config from '../../env.config.js'
 
-// 创建axios实例
+// 创建axios实例 - 统一配置，无环境差异
 const api = axios.create({
-  baseURL: config.apiBaseUrl,
+  baseURL: config.apiBaseUrl,  // 统一使用相对路径
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -34,6 +34,14 @@ api.interceptors.request.use(
         config.headers.Authorization = `Basic ${encodedCredentials}`
       }
     }
+    
+    // 调试信息
+    console.log('API请求:', {
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: config.baseURL + config.url
+    })
+    
     return config
   },
   error => {

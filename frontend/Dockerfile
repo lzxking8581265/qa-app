@@ -1,29 +1,16 @@
-# 构建阶段
-FROM registry.cn-beijing.aliyuncs.com/dcap-test-images/node:qa-20.11.0 AS builder
-
-# 设置工作目录
-WORKDIR /app
-
-# 复制package.json和package-lock.json
-COPY package*.json ./
-
-# 安装依赖
-RUN npm ci --only=production
-
-# 复制源代码
-COPY . .
-
-# 构建应用
-RUN npm run build
-
-# 生产阶段
+# 使用本地编译产物的Dockerfile
 FROM registry.cn-beijing.aliyuncs.com/dcap-images/nginx:1.23.1
 
-# 复制预编译的前端文件（需要先运行 npm run build）
+# 复制本地编译的前端文件
 COPY dist /usr/share/nginx/html
 
 # 复制nginx配置文件
 COPY nginx.conf /etc/nginx/nginx.conf
+
+# 复制关键配置文件（用于验证）
+COPY vite.config.js /tmp/vite.config.js
+COPY env.config.js /tmp/env.config.js
+COPY package.json /tmp/package.json
 
 # 暴露端口
 EXPOSE 80
