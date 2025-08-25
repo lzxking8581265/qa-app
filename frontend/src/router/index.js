@@ -21,7 +21,13 @@ const routes = [
   {
     path: '/records',
     name: 'Records',
-    component: () => import('../views/Records.vue'),
+    component: () => import('../views/ApiRecords.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/record-detail/:id',
+    name: 'RecordDetail',
+    component: () => import('../views/RecordDetail.vue'),
     meta: { requiresAuth: true }
   },
   {

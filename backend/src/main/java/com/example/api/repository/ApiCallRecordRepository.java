@@ -13,6 +13,7 @@ import java.util.List;
 /**
  * API调用记录Repository接口
  * 20241219 - 创建API调用记录Repository
+ * 20250425 - 添加用户认证相关查询方法
  */
 @Repository
 public interface ApiCallRecordRepository extends JpaRepository<ApiCallRecord, Long> {
@@ -31,12 +32,32 @@ public interface ApiCallRecordRepository extends JpaRepository<ApiCallRecord, Lo
      * 分页查询所有记录，按调用时间倒序排列
      */
     Page<ApiCallRecord> findAllByOrderByCallTimeDesc(Pageable pageable);
+    
+    /**
+     * 查询所有记录，按调用时间倒序排列
+     */
+    List<ApiCallRecord> findAllByOrderByCallTimeDesc();
 
     /**
      * 根据URL模糊查询记录
      */
     @Query("SELECT a FROM ApiCallRecord a WHERE a.requestUrl LIKE %:url%")
     List<ApiCallRecord> findByRequestUrlContaining(String url);
+
+    /**
+     * 根据认证状态查询记录
+     */
+    List<ApiCallRecord> findByIsAuthenticated(Boolean isAuthenticated);
+
+    /**
+     * 根据用户名查询记录
+     */
+    List<ApiCallRecord> findByUsername(String username);
+
+    /**
+     * 根据响应状态码查询记录
+     */
+    List<ApiCallRecord> findByResponseStatus(Integer responseStatus);
 
     /**
      * 统计总调用次数

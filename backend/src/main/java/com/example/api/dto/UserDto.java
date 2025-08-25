@@ -1,114 +1,112 @@
-package com.example.api.entity;
+package com.example.api.dto;
 
-import javax.persistence.*;
+import com.example.api.entity.User;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.Pattern;
 import java.time.LocalDateTime;
 
 /**
- * 用户实体类
- * 20241219 - 创建用户实体
- * 20250424131103 - 扩展用户信息字段，增加手机号码、身份证、部门、性别、办公地址、血型、车牌号码、住址、座机号等
+ * 用户数据传输对象
+ * 20250424131103 - 创建用户DTO，包含所有用户信息字段
  */
-@Entity
-@Table(name = "users")
-public class User {
+public class UserDto {
     
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
     @NotBlank(message = "用户名不能为空")
-    @Column(name = "username", nullable = false, unique = true, length = 50)
     private String username;
     
-    @NotBlank(message = "密码不能为空")
-    @Column(name = "password", nullable = false, length = 100)
-    private String password;
+    private String password; // 创建时必填，更新时可选
     
     @Email(message = "邮箱格式不正确")
-    @Column(name = "email", length = 100)
     private String email;
     
-    @Column(name = "full_name", length = 100)
     private String fullName;
     
-    @Column(name = "enabled", nullable = false)
     private Boolean enabled = true;
     
     // 新增字段 - 20250424131103
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号码格式不正确")
-    @Column(name = "phone", length = 20)
     private String phone;
     
     @Pattern(regexp = "^[1-9]\\d{5}(18|19|20)\\d{2}((0[1-9])|(1[0-2]))(([0-2][1-9])|10|20|30|31)\\d{3}[0-9Xx]$", message = "身份证号码格式不正确")
-    @Column(name = "id_card", length = 18)
     private String idCard;
     
-    @Column(name = "department", length = 100)
     private String department;
     
-    // 性别字段直接存储中文 - 20250424131103
-    @Column(name = "gender", length = 10)
     private String gender;
     
-    @Column(name = "office_address", length = 200)
     private String officeAddress;
     
-    @Enumerated(EnumType.STRING)
-    @Column(name = "blood_type", length = 10)
-    private BloodType bloodType;
+    private User.BloodType bloodType;
     
-    // 放宽车牌号码验证规则，允许为空或符合格式
-    @Pattern(regexp = "^$|^[京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领][A-Z][A-Z0-9]{4}[A-Z0-9挂学警港澳]$", message = "车牌号码格式不正确")
-    @Column(name = "license_plate", length = 20)
+    @Pattern(regexp = "^[京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领][A-Z][A-Z0-9]{4}[A-Z0-9挂学警港澳]$", message = "车牌号码格式不正确")
     private String licensePlate;
     
-    @Column(name = "home_address", length = 200)
     private String homeAddress;
     
-    // 放宽座机号码验证规则，允许为空或符合格式
-    @Pattern(regexp = "^$|^0\\d{2,3}-\\d{7,8}$", message = "座机号码格式不正确")
-    @Column(name = "landline", length = 20)
+    @Pattern(regexp = "^0\\d{2,3}-\\d{7,8}$", message = "座机号码格式不正确")
     private String landline;
     
-    @Column(name = "created_at", nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
     
-    @Column(name = "updated_at")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
     
-    // 血型枚举
-    public enum BloodType {
-        A("A型"),
-        B("B型"),
-        AB("AB型"),
-        O("O型");
-        
-        private final String displayName;
-        
-        BloodType(String displayName) {
-            this.displayName = displayName;
-        }
-        
-        public String getDisplayName() {
-            return displayName;
-        }
-    }
-    
     // 构造函数
-    public User() {
-        this.createdAt = LocalDateTime.now();
-        this.enabled = true;
-    }
+    public UserDto() {}
     
-    public User(String username, String password, String email, String fullName) {
-        this();
+    public UserDto(String username, String password, String email, String fullName) {
         this.username = username;
         this.password = password;
         this.email = email;
         this.fullName = fullName;
+        this.enabled = true;
+    }
+    
+    // 从实体转换为DTO
+    public static UserDto fromEntity(User user) {
+        UserDto dto = new UserDto();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+        dto.setFullName(user.getFullName());
+        dto.setEnabled(user.getEnabled());
+        dto.setPhone(user.getPhone());
+        dto.setIdCard(user.getIdCard());
+        dto.setDepartment(user.getDepartment());
+        dto.setGender(user.getGender());
+        dto.setOfficeAddress(user.getOfficeAddress());
+        dto.setBloodType(user.getBloodType());
+        dto.setLicensePlate(user.getLicensePlate());
+        dto.setHomeAddress(user.getHomeAddress());
+        dto.setLandline(user.getLandline());
+        dto.setCreatedAt(user.getCreatedAt());
+        dto.setUpdatedAt(user.getUpdatedAt());
+        return dto;
+    }
+    
+    // 转换为实体（不包含密码）
+    public User toEntity() {
+        User user = new User();
+        user.setId(this.id);
+        user.setUsername(this.username);
+        user.setEmail(this.email);
+        user.setFullName(this.fullName);
+        user.setEnabled(this.enabled);
+        user.setPhone(this.phone);
+        user.setIdCard(this.idCard);
+        user.setDepartment(this.department);
+        user.setGender(this.gender);
+        user.setOfficeAddress(this.officeAddress);
+        user.setBloodType(this.bloodType);
+        user.setLicensePlate(this.licensePlate);
+        user.setHomeAddress(this.homeAddress);
+        user.setLandline(this.landline);
+        return user;
     }
     
     // Getter和Setter方法
@@ -160,7 +158,6 @@ public class User {
         this.enabled = enabled;
     }
     
-    // 新增字段的Getter和Setter - 20250424131103
     public String getPhone() {
         return phone;
     }
@@ -201,11 +198,11 @@ public class User {
         this.officeAddress = officeAddress;
     }
     
-    public BloodType getBloodType() {
+    public User.BloodType getBloodType() {
         return bloodType;
     }
     
-    public void setBloodType(BloodType bloodType) {
+    public void setBloodType(User.BloodType bloodType) {
         this.bloodType = bloodType;
     }
     
@@ -249,14 +246,9 @@ public class User {
         this.updatedAt = updatedAt;
     }
     
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
-    
     @Override
     public String toString() {
-        return "User{" +
+        return "UserDto{" +
                 "id=" + id +
                 ", username='" + username + '\'' +
                 ", email='" + email + '\'' +

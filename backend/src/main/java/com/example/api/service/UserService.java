@@ -14,6 +14,7 @@ import java.util.Optional;
  * 用户Service类
  * 20241219 - 创建用户Service
  * 20241219 - 修复兼容Spring Boot 2.x和JDK 1.8
+ * 20250424131103 - 扩展用户信息字段，添加新方法
  */
 @Service
 @Transactional
@@ -71,9 +72,21 @@ public class UserService {
             existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
         }
         
+        // 更新基本信息
         existingUser.setEmail(user.getEmail());
         existingUser.setFullName(user.getFullName());
         existingUser.setEnabled(user.getEnabled());
+        
+        // 更新新增字段 - 20250424131103
+        existingUser.setPhone(user.getPhone());
+        existingUser.setIdCard(user.getIdCard());
+        existingUser.setDepartment(user.getDepartment());
+        existingUser.setGender(user.getGender());
+        existingUser.setOfficeAddress(user.getOfficeAddress());
+        existingUser.setBloodType(user.getBloodType());
+        existingUser.setLicensePlate(user.getLicensePlate());
+        existingUser.setHomeAddress(user.getHomeAddress());
+        existingUser.setLandline(user.getLandline());
         
         return userRepository.save(existingUser);
     }
@@ -100,18 +113,26 @@ public class UserService {
     }
 
     /**
-     * 修改用户密码
+     * 修改用户密码（简化版，不需要验证旧密码）
      */
-    public boolean changePassword(Long id, String oldPassword, String newPassword) {
+    public User changePassword(Long id, String newPassword) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("用户不存在"));
         
-        if (passwordEncoder.matches(oldPassword, user.getPassword())) {
-            user.setPassword(passwordEncoder.encode(newPassword));
-            userRepository.save(user);
-            return true;
-        }
-        return false;
+        user.setPassword(passwordEncoder.encode(newPassword));
+        return userRepository.save(user);
+    }
+
+    /**
+     * 重置用户密码
+     */
+    public User resetPassword(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        
+        // 重置为默认密码 123456
+        user.setPassword(passwordEncoder.encode("123456"));
+        return userRepository.save(user);
     }
 
     /**
@@ -130,11 +151,27 @@ public class UserService {
     }
 
     /**
-     * 统计活跃用户数
+     * 统计启用用户数
+     */
+    @Transactional(readOnly = true)
+    public long countEnabledUsers() {
+        return userRepository.countByEnabledTrue();
+    }
+
+    /**
+     * 统计禁用用户数
+     */
+    @Transactional(readOnly = true)
+    public long countDisabledUsers() {
+        return userRepository.countByEnabledFalse();
+    }
+
+    /**
+     * 统计活跃用户数（兼容旧方法）
      */
     @Transactional(readOnly = true)
     public long countActiveUsers() {
-        return userRepository.countByEnabledTrue();
+        return countEnabledUsers();
     }
 
     /**

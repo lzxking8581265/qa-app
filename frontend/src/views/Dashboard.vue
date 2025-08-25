@@ -147,114 +147,101 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useRouter } from 'vue-router'
-import api from '../api'
 import { ElMessage } from 'element-plus'
+import api from '../api'
 
-export default {
-  name: 'Dashboard',
-  setup() {
-    const authStore = useAuthStore()
-    const router = useRouter()
+const authStore = useAuthStore()
+const router = useRouter()
+
+const stats = ref({
+  totalCalls: 0,
+  todayCalls: 0,
+  totalUsers: 0,
+  activeUsers: 0
+})
+
+const recentRecords = ref([])
+
+// 获取统计数据
+const fetchStats = async () => {
+  try {
+    const [callsResponse, usersResponse] = await Promise.all([
+      api.get('/recorder/stats'),
+      api.get('/users')
+    ])
     
-    const stats = ref({
+    // 处理API调用统计
+    if (callsResponse.data) {
+      stats.value.totalCalls = callsResponse.data.totalCalls || 0
+      stats.value.todayCalls = callsResponse.data.todayCalls || 0
+    } else {
+      stats.value.totalCalls = 0
+      stats.value.todayCalls = 0
+    }
+    
+    // 处理用户统计
+    if (Array.isArray(usersResponse.data)) {
+      stats.value.totalUsers = usersResponse.data.length
+      stats.value.activeUsers = usersResponse.data.filter(u => u.enabled).length
+    } else {
+      stats.value.totalUsers = 0
+      stats.value.activeUsers = 0
+    }
+  } catch (error) {
+    console.error('获取统计数据失败:', error)
+    // 设置默认值，避免页面显示错误
+    stats.value = {
       totalCalls: 0,
       todayCalls: 0,
       totalUsers: 0,
       activeUsers: 0
-    })
-    
-    const recentRecords = ref([])
-    
-    // 获取统计数据
-    const fetchStats = async () => {
-      try {
-        const [callsResponse, usersResponse] = await Promise.all([
-          api.get('/recorder/stats'),
-          api.get('/users')
-        ])
-        
-        // 处理API调用统计
-        if (callsResponse.data) {
-          stats.value.totalCalls = callsResponse.data.totalCalls || 0
-          stats.value.todayCalls = callsResponse.data.todayCalls || 0
-        } else {
-          stats.value.totalCalls = 0
-          stats.value.todayCalls = 0
-        }
-        
-        // 处理用户统计
-        if (Array.isArray(usersResponse.data)) {
-          stats.value.totalUsers = usersResponse.data.length
-          stats.value.activeUsers = usersResponse.data.filter(u => u.enabled).length
-        } else {
-          stats.value.totalUsers = 0
-          stats.value.activeUsers = 0
-        }
-      } catch (error) {
-        console.error('获取统计数据失败:', error)
-        // 设置默认值，避免页面显示错误
-        stats.value = {
-          totalCalls: 0,
-          todayCalls: 0,
-          totalUsers: 0,
-          activeUsers: 0
-        }
-      }
-    }
-    
-    // 获取最近记录
-    const fetchRecentRecords = async () => {
-      try {
-        const response = await api.get('/recorder/records?page=0&size=10')
-        
-        // 处理分页数据
-        if (response.data && response.data.content) {
-          recentRecords.value = response.data.content
-        } else if (Array.isArray(response.data)) {
-          recentRecords.value = response.data
-        } else {
-          recentRecords.value = []
-        }
-      } catch (error) {
-        console.error('获取最近记录失败:', error)
-        // 设置空数组，避免页面显示错误
-        recentRecords.value = []
-      }
-    }
-    
-    // 格式化时间
-    const formatTime = (timeStr) => {
-      if (!timeStr) return ''
-      const date = new Date(timeStr)
-      return date.toLocaleString('zh-CN')
-    }
-    
-    // 处理下拉菜单命令
-    const handleCommand = (command) => {
-      if (command === 'logout') {
-        authStore.logout()
-        ElMessage.success('已退出登录')
-      }
-    }
-    
-    onMounted(() => {
-      fetchStats()
-      fetchRecentRecords()
-    })
-    
-    return {
-      authStore,
-      stats,
-      recentRecords,
-      formatTime,
-      handleCommand
     }
   }
 }
+
+// 获取最近记录
+const fetchRecentRecords = async () => {
+  try {
+    const response = await api.get('/recorder/records?page=0&size=10')
+    
+    // 处理分页数据
+    if (response.data && response.data.content) {
+      recentRecords.value = response.data.content
+    } else if (Array.isArray(response.data)) {
+      recentRecords.value = response.data
+    } else {
+      recentRecords.value = []
+    }
+  } catch (error) {
+    console.error('获取最近记录失败:', error)
+    // 设置空数组，避免页面显示错误
+    recentRecords.value = []
+  }
+}
+
+// 格式化时间
+const formatTime = (timeStr) => {
+  if (!timeStr) return ''
+  const date = new Date(timeStr)
+  return date.toLocaleString('zh-CN')
+}
+
+// 处理下拉菜单命令
+const handleCommand = (command) => {
+  if (command === 'logout') {
+    authStore.logout()
+    ElMessage.success('已退出登录')
+  }
+}
+
+onMounted(() => {
+  fetchStats()
+  fetchRecentRecords()
+})
 </script>
 
 <style scoped>

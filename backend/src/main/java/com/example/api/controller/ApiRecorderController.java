@@ -32,6 +32,28 @@ public class ApiRecorderController {
     private ApiCallRecordService apiCallRecordService;
 
     /**
+     * 外部告警接口 - 用于外部应用调用记录
+     * 注意：此接口的调用记录由拦截器自动处理，避免重复记录
+     */
+    @PostMapping("/alert")
+    public ResponseEntity<Map<String, Object>> recordAlertCall(HttpServletRequest request) {
+        try {
+            // 拦截器已经记录了请求信息，这里只需要返回响应
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "告警请求已接收");
+            response.put("timestamp", LocalDateTime.now());
+            response.put("status", "success");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "处理告警请求失败: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
      * 记录POST请求
      */
     @PostMapping("/**")
@@ -50,7 +72,7 @@ public class ApiRecorderController {
                 LocalDateTime.now(), clientIp, userAgent
             );
             
-            ApiCallRecord savedRecord = apiCallRecordService.saveRecord(record);
+            ApiCallRecord savedRecord = apiCallRecordService.save(record);
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "POST请求已记录");
@@ -84,7 +106,7 @@ public class ApiRecorderController {
                 LocalDateTime.now(), clientIp, userAgent
             );
             
-            ApiCallRecord savedRecord = apiCallRecordService.saveRecord(record);
+            ApiCallRecord savedRecord = apiCallRecordService.save(record);
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "GET请求已记录");
@@ -175,9 +197,10 @@ public class ApiRecorderController {
      */
     @DeleteMapping("/records/{id}")
     public ResponseEntity<Void> deleteRecord(@PathVariable Long id) {
-        if (apiCallRecordService.deleteRecord(id)) {
+        try {
+            apiCallRecordService.deleteById(id);
             return ResponseEntity.ok().build();
-        } else {
+        } catch (Exception e) {
             return ResponseEntity.notFound().build();
         }
     }
@@ -188,7 +211,7 @@ public class ApiRecorderController {
     @DeleteMapping("/records")
     public ResponseEntity<Map<String, Object>> clearAllRecords() {
         try {
-            apiCallRecordService.deleteAllRecords();
+            apiCallRecordService.deleteAll();
             Map<String, Object> response = new HashMap<>();
             response.put("message", "所有记录已清空");
             response.put("timestamp", LocalDateTime.now());
