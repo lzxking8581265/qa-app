@@ -26,7 +26,7 @@ services:
 
   backend:
     image: registry.cn-beijing.aliyuncs.com/dcap-test-images/api-recorder-backend:1.0.0
-    container_name: api-recqoderqoderorder-backend
+    container_name: api-recorder-backend
     restart: unless-stopped
     ports:
       - "8080:8080"
@@ -36,9 +36,10 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: first@YD
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_SHOW_SQL: false
+      SPRING_JPA_SHOW_SQL: true
       
       # JVM参数配置 - 高并发优化配置
+      #JAVA_OPTS: "-Xmx1g -Xms512m -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication -XX:+OptimizeStringConcat -javaagent:/app/dguard/agent.jar"
       JAVA_OPTS: "-Xmx1g -Xms512m -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication -XX:+OptimizeStringConcat"
       
       # 其他JVM参数配置 - 可通过环境变量修改
@@ -66,22 +67,16 @@ services:
       LOGGING_LEVEL_ROOT: ${LOGGING_LEVEL_ROOT:-INFO}
       LOGGING_LEVEL_COM_EXAMPLE_API: ${LOGGING_LEVEL_COM_EXAMPLE_API:-INFO}
       
-      # 生产环境日志配置 - 减少日志输出，提升性能
-      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: WARN
-      LOGGING_LEVEL_ORG_HIBERNATE: WARN
+      # 调试配置 - 添加更多日志信息
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: INFO
+      LOGGING_LEVEL_ORG_HIBERNATE: INFO
       LOGGING_LEVEL_COM_ZAXXER_HIKARI: INFO
-      
-      # 性能监控配置 - 可通过环境变量修改
-      APP_PERFORMANCE_MONITORING_ENABLED: ${APP_PERFORMANCE_MONITORING_ENABLED:-true}
-      APP_PERFORMANCE_SLOW_QUERY_THRESHOLD: ${APP_PERFORMANCE_SLOW_QUERY_THRESHOLD:-100}
-      APP_PERFORMANCE_LOG_SLOW_QUERIES: ${APP_PERFORMANCE_LOG_SLOW_QUERIES:-true}
-      APP_PERFORMANCE_LOG_METRICS: ${APP_PERFORMANCE_LOG_METRICS:-true}
       
     depends_on:
       mysql:
         condition: service_healthy
     volumes:
-      - /root/yd/qa_app/dguard/:/app/dguard/:rw
+      - /new/dguard/:/app/dguard/:rw
     networks:
       api-network:
         ipv4_address: 174.20.0.20

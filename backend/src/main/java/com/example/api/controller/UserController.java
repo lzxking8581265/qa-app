@@ -1,7 +1,10 @@
 package com.example.api.controller;
 
+import com.example.api.config.PerformanceMonitoringConfig;
 import com.example.api.dto.UserDto;
+import com.example.api.dto.UserLimitedResponseDto;
 import com.example.api.entity.User;
+import com.example.api.service.PerformanceStatisticsService;
 import com.example.api.service.TestUserGeneratorService;
 import com.example.api.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +35,12 @@ public class UserController {
     
     @Autowired
     private TestUserGeneratorService testUserGeneratorService;
+    
+    @Autowired
+    private PerformanceMonitoringConfig performanceConfig;
+    
+    @Autowired
+    private PerformanceStatisticsService performanceStatisticsService;
 
     /**
      * 获取所有用户
@@ -43,6 +52,155 @@ public class UserController {
                 .map(UserDto::fromEntity)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(userDtos);
+    }
+    
+    /**
+     * 获取指定数量的用户（高性能版本）
+     * @param limit 限制返回的用户数量，默认100，最大1000
+     * @param offset 偏移量，用于分页，默认0
+     * @param usePrepStmt 是否使用PreparedStatement，默认false
+     */
+    @GetMapping("/limited")
+    public ResponseEntity<?> getLimitedUsers(
+            @RequestParam(defaultValue = "100") int limit,
+            @RequestParam(defaultValue = "0") int offset,
+            @RequestParam(defaultValue = "false") boolean usePrepStmt) {
+        
+        // 调试：检查认证状态
+        try {
+            org.springframework.security.core.Authentication auth = 
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null) {
+                System.out.println("=== 认证状态检查 ===");
+                System.out.println("认证状态: " + auth.isAuthenticated());
+                System.out.println("用户名: " + auth.getName());
+                System.out.println("权限: " + auth.getAuthorities());
+                System.out.println("==================");
+            }
+        } catch (Exception e) {
+            System.out.println("获取认证信息时出错: " + e.getMessage());
+        }
+        
+        // 参数验证
+        if (limit <= 0 || limit > 1000) {
+            return ResponseEntity.badRequest().build();
+        }
+        if (offset < 0) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        // 接口开始时间
+        long interfaceStartTime = System.currentTimeMillis();
+        
+        // 数据库查询开始时间
+        long dbQueryStartTime = System.currentTimeMillis();
+        
+        // 根据参数选择是否使用PreparedStatement
+        List<User> users;
+        if (usePrepStmt) {
+            System.out.println("使用PreparedStatement方式查询");
+            users = userService.findLimitedUsers(limit, offset);
+        } else {
+            System.out.println("使用直接SQL方式查询（不使用PreparedStatement）");
+            users = userService.findLimitedUsersWithoutPrepStmt(limit, offset);
+        }
+        
+        // 数据库查询结束时间
+        long dbQueryEndTime = System.currentTimeMillis();
+        long dbQueryTime = dbQueryEndTime - dbQueryStartTime;
+        
+        // DTO转换开始时间
+        long dtoConvertStartTime = System.currentTimeMillis();
+        
+        List<UserDto> userDtos = users.stream()
+                .map(UserDto::fromEntity)
+                .collect(Collectors.toList());
+        
+        // DTO转换结束时间
+        long dtoConvertEndTime = System.currentTimeMillis();
+        long dtoConvertTime = dtoConvertEndTime - dtoConvertStartTime;
+        
+        // 接口结束时间
+        long interfaceEndTime = System.currentTimeMillis();
+        long totalTime = interfaceEndTime - interfaceStartTime;
+        
+        // 如果性能监控未启用，直接返回用户数据
+        if (!performanceConfig.shouldIncludePerformanceMetrics()) {
+            return ResponseEntity.ok(userDtos);
+        }
+        
+        // 性能监控启用时的详细处理
+        // 构建性能指标
+        UserLimitedResponseDto.PerformanceMetrics performance = 
+            new UserLimitedResponseDto.PerformanceMetrics(
+                totalTime + "ms",
+                dbQueryTime + "ms", 
+                dtoConvertTime + "ms",
+                (totalTime - dbQueryTime - dtoConvertTime) + "ms",
+                System.currentTimeMillis()
+            );
+        
+        // 构建响应DTO
+        UserLimitedResponseDto response = new UserLimitedResponseDto(
+            userDtos, users.size(), limit, offset, performance
+        );
+        
+        // 记录性能统计数据（如果监控启用）
+        if (performanceConfig.isEnabled()) {
+            performanceStatisticsService.recordPerformance(
+                "/users/limited",
+                totalTime,
+                dbQueryTime,
+                dtoConvertTime,
+                totalTime - dbQueryTime - dtoConvertTime
+            );
+        }
+        
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * 获取/users/limited接口的性能统计
+     */
+    @GetMapping("/limited/stats")
+    public ResponseEntity<PerformanceStatisticsService.PerformanceStatistics> getLimitedUsersStats() {
+        PerformanceStatisticsService.PerformanceStatistics stats = 
+            performanceStatisticsService.getPerformanceStatistics("/users/limited");
+        return ResponseEntity.ok(stats);
+    }
+    
+    /**
+     * 获取所有接口的性能统计概览
+     */
+    @GetMapping("/limited/stats/overview")
+    public ResponseEntity<PerformanceStatisticsService.PerformanceOverview> getAllEndpointsOverview() {
+        PerformanceStatisticsService.PerformanceOverview overview = 
+            performanceStatisticsService.getAllEndpointsOverview();
+        return ResponseEntity.ok(overview);
+    }
+    
+    /**
+     * 重置/users/limited接口的性能统计
+     */
+    @PostMapping("/limited/stats/reset")
+    public ResponseEntity<Map<String, String>> resetLimitedUsersStats() {
+        performanceStatisticsService.resetStats("/users/limited");
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "性能统计数据已重置");
+        response.put("timestamp", String.valueOf(System.currentTimeMillis()));
+        return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * 重置所有接口的性能统计
+     */
+    @PostMapping("/limited/stats/reset-all")
+    public ResponseEntity<Map<String, String>> resetAllStats() {
+        performanceStatisticsService.resetAllStats();
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "所有性能统计数据已重置");
+        response.put("timestamp", String.valueOf(System.currentTimeMillis()));
+        return ResponseEntity.ok(response);
     }
 
     /**

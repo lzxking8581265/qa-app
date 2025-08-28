@@ -1,45 +1,49 @@
 version: '3.8'
 
+# 分布式部署配置文件
+# 支持前后端服务和数据库分别部署在不同位置
+
 services:
+  # MySQL数据库服务 - 可部署在独立服务器
   mysql:
     image: registry.cn-beijing.aliyuncs.com/dcap-test-images/api-recorder-mysql:1.0.0
     container_name: api-recorder-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: first@YD
-      MYSQL_DATABASE: api_recorder
-      MYSQL_USER: api_user
-      MYSQL_PASSWORD: api_pass
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-first@YD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-api_recorder}
+      MYSQL_USER: ${MYSQL_USER:-api_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-api_pass}
     ports:
-      - "3306:3306"
+      - "${MYSQL_PORT:-3306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      api-network:
-        ipv4_address: 174.20.0.10
+      - mysql-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pfirst@YD"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-first@YD}"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
+  # 后端服务 - 可部署在独立服务器
   backend:
     image: registry.cn-beijing.aliyuncs.com/dcap-test-images/api-recorder-backend:1.0.0
-    container_name: api-recqoderqoderorder-backend
+    container_name: api-recorder-backend
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8080}:8080"
     environment:
-      # 数据库配置
-      SPRING_DATASOURCE_URL: jdbc:mysql://174.20.0.10:3306/api_recorder?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: first@YD
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_SHOW_SQL: false
+      # 数据库配置 - 支持远程数据库连接
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://${MYSQL_HOST:-mysql}:${MYSQL_PORT:-3306}/${MYSQL_DATABASE:-api_recorder}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-root}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-first@YD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+      SPRING_JPA_SHOW_SQL: ${SPRING_JPA_SHOW_SQL:-false}
       
       # JVM参数配置 - 高并发优化配置
-      JAVA_OPTS: "-Xmx1g -Xms512m -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication -XX:+OptimizeStringConcat"
+      JAVA_OPTS: ${JAVA_OPTS:-"-Xmx1g -Xms512m -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication -XX:+OptimizeStringConcat"}
       
       # 其他JVM参数配置 - 可通过环境变量修改
       JAVA_HEAP_INITIAL: ${JAVA_HEAP_INITIAL:-256m}
@@ -67,9 +71,9 @@ services:
       LOGGING_LEVEL_COM_EXAMPLE_API: ${LOGGING_LEVEL_COM_EXAMPLE_API:-INFO}
       
       # 生产环境日志配置 - 减少日志输出，提升性能
-      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: WARN
-      LOGGING_LEVEL_ORG_HIBERNATE: WARN
-      LOGGING_LEVEL_COM_ZAXXER_HIKARI: INFO
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK:-WARN}
+      LOGGING_LEVEL_ORG_HIBERNATE: ${LOGGING_LEVEL_ORG_HIBERNATE:-WARN}
+      LOGGING_LEVEL_COM_ZAXXER_HIKARI: ${LOGGING_LEVEL_COM_ZAXXER_HIKARI:-INFO}
       
       # 性能监控配置 - 可通过环境变量修改
       APP_PERFORMANCE_MONITORING_ENABLED: ${APP_PERFORMANCE_MONITORING_ENABLED:-true}
@@ -77,14 +81,19 @@ services:
       APP_PERFORMANCE_LOG_SLOW_QUERIES: ${APP_PERFORMANCE_LOG_SLOW_QUERIES:-true}
       APP_PERFORMANCE_LOG_METRICS: ${APP_PERFORMANCE_LOG_METRICS:-true}
       
+      # 跨域配置 - 支持前端远程访问
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+      CORS_ALLOWED_METHODS: ${CORS_ALLOWED_METHODS:-GET,POST,PUT,DELETE,PATCH,OPTIONS}
+      CORS_ALLOWED_HEADERS: ${CORS_ALLOWED_HEADERS:-*}
+      CORS_ALLOW_CREDENTIALS: ${CORS_ALLOW_CREDENTIALS:-true}
+      
     depends_on:
       mysql:
         condition: service_healthy
     volumes:
-      - /root/yd/qa_app/dguard/:/app/dguard/:rw
+      - ${DGUARD_VOLUME_PATH:-/root/yd/qa_app/dguard/}:/app/dguard/:rw
     networks:
-      api-network:
-        ipv4_address: 174.20.0.20
+      - backend-network
     healthcheck:
       test: ["CMD-SHELL", "ps aux | grep java | grep -v grep > /dev/null 2>&1"]
       interval: 30s
@@ -92,26 +101,60 @@ services:
       retries: 3
       start_period: 60s
 
+  # 前端服务 - 可部署在独立服务器
   frontend:
     image: registry.cn-beijing.aliyuncs.com/dcap-test-images/api-recorder-frontend:1.0.0
     container_name: api-recorder-frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "${FRONTEND_PORT:-3000}:80"
+    environment:
+      # 后端API地址配置
+      REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL:-http://${BACKEND_HOST:-localhost}:${BACKEND_PORT:-8080}}
+      REACT_APP_API_TIMEOUT: ${REACT_APP_API_TIMEOUT:-30000}
+      
+      # 前端配置
+      REACT_APP_TITLE: ${REACT_APP_TITLE:-API Recorder}
+      REACT_APP_VERSION: ${REACT_APP_VERSION:-1.0.0}
+      
     depends_on:
       - backend
     networks:
-      api-network:
-        ipv4_address: 174.20.0.30
+      - frontend-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
+# 网络配置 - 支持分布式部署
 networks:
-  api-network:
+  # MySQL网络 - 数据库专用
+  mysql-network:
     driver: bridge
     ipam:
       config:
-        - subnet: 174.20.0.0/16
-          gateway: 174.20.0.1
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+  
+  # 后端网络 - 后端服务专用
+  backend-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+          gateway: 172.21.0.1
+  
+  # 前端网络 - 前端服务专用
+  frontend-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+          gateway: 172.22.0.1
 
+# 数据卷配置
 volumes:
   mysql_data:
     driver: local

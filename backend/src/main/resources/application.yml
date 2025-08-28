@@ -9,7 +9,7 @@ spring:
     name: api-recorder
   
   datasource:
-    url: jdbc:mysql://mysql:3306/api_recorder?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/api_recorder?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useServerPrepStmts=false&cachePrepStmts=false&rewriteBatchedStatements=false
     username: root
     password: first@YD
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -56,3 +56,12 @@ management:
   endpoint:
     health:
       show-details: always
+
+# 性能监控配置
+app:
+  performance:
+    monitoring:
+      enabled: true  # 是否启用性能监控
+      slow-query-threshold: 100  # 慢查询阈值(毫秒)
+      log-slow-queries: true     # 是否记录慢查询日志
+      log-performance-metrics: true  # 是否在响应中包含性能指标

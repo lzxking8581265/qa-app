@@ -95,6 +95,14 @@ build_backend() {
         exit 1
     fi
     
+    # 验证JAR文件是否存在
+    if [ ! -f "target/api-recorder-1.0.0.jar" ]; then
+        log_error "JAR文件未生成: target/api-recorder-1.0.0.jar"
+        exit 1
+    fi
+    
+    log_info "JAR文件验证成功: $(ls -lh target/api-recorder-1.0.0.jar)"
+    
     cd ..
 }
 

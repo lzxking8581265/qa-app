@@ -90,15 +90,6 @@ VALUES (
     gender = '男',
     updated_at = NOW();
 
--- 修复root用户权限，允许从任何主机连接
--- 注意：在初始化脚本中，我们需要使用root用户（无密码）
--- 删除旧的root用户（如果存在）
-DROP USER IF EXISTS 'root'@'localhost';
-
--- 创建新的root用户，允许从任何主机连接
-CREATE USER 'root'@'%' IDENTIFIED BY 'first@YD';
-GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
-
 -- 创建数据库用户（如果不存在）
 CREATE USER IF NOT EXISTS 'api_user'@'%' IDENTIFIED BY 'api_pass';
 GRANT ALL PRIVILEGES ON api_recorder.* TO 'api_user'@'%';

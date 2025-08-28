@@ -2,6 +2,8 @@ package com.example.api.repository;
 
 import com.example.api.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -50,4 +52,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * 查找用户名不等于指定值的用户列表
      */
     List<User> findByUsernameNot(String username);
+    
+    /**
+     * 查询指定数量的用户（高性能版本）
+     * 使用原生SQL查询，避免JPA的N+1问题
+     * 使用命名参数，尝试避免PreparedStatement
+     * 
+     * 调试信息：
+     * - 方法名: findLimitedUsers
+     * - 参数: limit (限制数量), offset (偏移量)
+     * - SQL: SELECT * FROM users ORDER BY id ASC LIMIT :limit OFFSET :offset
+     * - 返回: List<User>
+     */
+    @Query(value = "SELECT * FROM users ORDER BY id ASC LIMIT :limit OFFSET :offset", nativeQuery = true)
+    List<User> findLimitedUsers(@Param("limit") int limit, @Param("offset") int offset);
 }

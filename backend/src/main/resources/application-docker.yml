@@ -1,0 +1,55 @@
+# Docker环境配置文件
+# 支持通过环境变量配置JVM和连接池参数
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  # 数据源配置 - 使用环境变量覆盖
+  datasource:
+    hikari:
+      maximum-pool-size: ${SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE:20}
+      minimum-idle: ${SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE:5}
+      connection-timeout: ${SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT:30000}
+      idle-timeout: ${SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT:600000}
+      max-lifetime: ${SPRING_DATASOURCE_HIKARI_MAX_LIFETIME:1800000}
+    # 禁用PreparedStatement相关优化
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://${MYSQL_HOST:mysql}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:api_recorder}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useServerPrepStmts=false&cachePrepStmts=false&rewriteBatchedStatements=false}
+  
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: ${SPRING_JPA_SHOW_SQL:true}
+
+# 日志配置
+logging:
+  level:
+    root: ${LOGGING_LEVEL_ROOT:INFO}
+    com.example.api: ${LOGGING_LEVEL_COM_EXAMPLE_API:DEBUG}
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# 管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+
+# 性能监控配置
+app:
+  performance:
+    monitoring:
+      enabled: ${APP_PERFORMANCE_MONITORING_ENABLED:true}  # 是否启用性能监控
+      slow-query-threshold: ${APP_PERFORMANCE_SLOW_QUERY_THRESHOLD:100}  # 慢查询阈值(毫秒)
+      log-slow-queries: ${APP_PERFORMANCE_LOG_SLOW_QUERIES:true}     # 是否记录慢查询日志
+      log-performance-metrics: ${APP_PERFORMANCE_LOG_METRICS:true}  # 是否在响应中包含性能指标

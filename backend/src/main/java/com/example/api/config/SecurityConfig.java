@@ -18,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.config.http.SessionCreationPolicy;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -78,6 +79,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     /**
      * 安全配置
+     * 完全禁用认证，所有接口都可以访问
      */
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -85,22 +87,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .cors().and()
             .csrf().disable()
             .authorizeRequests()
-                // 允许访问健康检查端点
-                .antMatchers("/actuator/**", "/health", "/info").permitAll()
-                // 允许访问错误页面
-                .antMatchers("/error").permitAll()
-                // 允许访问认证接口（无需认证）
-                .antMatchers("/auth/**").permitAll()
-                // 允许访问API记录接口（无需认证）
-                .antMatchers("/recorder/**").permitAll()
-                // 允许访问Swagger文档
-                .antMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll()
-                // 用户管理API需要认证
-                .antMatchers("/users/**").authenticated()
-                // 其他API需要认证
-                .anyRequest().authenticated()
+                // 所有接口都允许访问，完全禁用认证
+                .anyRequest().permitAll()
             .and()
-            .httpBasic();
+            .httpBasic().disable()  // 禁用HTTP Basic认证
+            .formLogin().disable()   // 禁用表单登录
+            .logout().disable()      // 禁用登出
+            .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
     }
 
     /**
