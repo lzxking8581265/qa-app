@@ -24,15 +24,16 @@ spring:
       ddl-auto: update
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-    show-sql: ${SPRING_JPA_SHOW_SQL:true}
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}  # 20250904 - 禁用Hibernate SQL日志输出
 
 # 日志配置
 logging:
   level:
     root: ${LOGGING_LEVEL_ROOT:INFO}
-    com.example.api: ${LOGGING_LEVEL_COM_EXAMPLE_API:DEBUG}
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.example.api: ${LOGGING_LEVEL_COM_EXAMPLE_API:INFO}
+    org.springframework.security: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY:INFO}
+    org.hibernate.SQL: ${LOGGING_LEVEL_ORG_HIBERNATE_SQL:INFO}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${LOGGING_LEVEL_ORG_HIBERNATE_BINDER:WARN}
 
 # 管理端点配置
 management:
@@ -49,7 +50,7 @@ management:
 app:
   performance:
     monitoring:
-      enabled: ${APP_PERFORMANCE_MONITORING_ENABLED:true}  # 是否启用性能监控
+      enabled: ${APP_PERFORMANCE_MONITORING_ENABLED:false}  # 是否启用性能监控 - 默认禁用
       slow-query-threshold: ${APP_PERFORMANCE_SLOW_QUERY_THRESHOLD:100}  # 慢查询阈值(毫秒)
-      log-slow-queries: ${APP_PERFORMANCE_LOG_SLOW_QUERIES:true}     # 是否记录慢查询日志
-      log-performance-metrics: ${APP_PERFORMANCE_LOG_METRICS:true}  # 是否在响应中包含性能指标
+      log-slow-queries: ${APP_PERFORMANCE_LOG_SLOW_QUERIES:false}     # 是否记录慢查询日志 - 默认禁用
+      log-performance-metrics: ${APP_PERFORMANCE_LOG_METRICS:false}  # 是否在响应中包含性能指标 - 默认禁用

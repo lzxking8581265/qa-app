@@ -33,6 +33,12 @@ public class UserService {
     
     @Autowired
     private EntityManager entityManager;
+    
+    @Autowired
+    private UserDataProcessor userDataProcessor;
+    
+    @Autowired
+    private UserCacheService userCacheService;
 
     /**
      * 创建新用户
@@ -84,10 +90,20 @@ public class UserService {
         
         // 如果性能监控未启用，直接返回结果
         if (performanceConfig == null || !performanceConfig.isEnabled()) {
-            System.out.println("性能监控未启用，直接调用Repository");
+            // 20250904 - 注释掉调试日志
+            // System.out.println("性能监控未启用，直接调用Repository");
             List<User> users = userRepository.findLimitedUsers(limit, offset);
-            System.out.println("查询结果: " + users.size() + " 条记录");
-            return users;
+            
+            // 20250904 - 增加工作负载，使响应时间与延迟匹配
+            // 1. 使用缓存服务处理数据
+            String cacheKey = "users_repo_" + limit + "_" + offset;
+            List<User> cachedUsers = userCacheService.getUsersWithCache(cacheKey, users);
+            
+            // 2. 使用数据处理器增强数据
+            List<User> processedUsers = userDataProcessor.processUserData(cachedUsers);
+            
+            // System.out.println("查询结果: " + processedUsers.size() + " 条记录");
+            return processedUsers;
         }
         
         System.out.println("性能监控已启用，记录查询时间");
@@ -133,8 +149,9 @@ public class UserService {
      */
     @Transactional(readOnly = true)
     public List<User> findLimitedUsersWithoutPrepStmt(int limit, int offset) {
-        System.out.println("=== findLimitedUsersWithoutPrepStmt 方法被调用 ===");
-        System.out.println("参数: limit=" + limit + ", offset=" + offset);
+        // 20250904 - 注释掉调试日志输出
+        // System.out.println("=== findLimitedUsersWithoutPrepStmt 方法被调用 ===");
+        // System.out.println("参数: limit=" + limit + ", offset=" + offset);
         
         try {
             // 使用EntityManager直接执行SQL，不使用PreparedStatement
@@ -142,14 +159,22 @@ public class UserService {
             javax.persistence.EntityManager em = entityManager;
             
             String sql = "SELECT * FROM users ORDER BY id ASC LIMIT " + limit + " OFFSET " + offset;
-            System.out.println("直接执行SQL: " + sql);
+            // System.out.println("直接执行SQL: " + sql);
             
             javax.persistence.Query query = em.createNativeQuery(sql, User.class);
             @SuppressWarnings("unchecked")
             List<User> users = query.getResultList();
             
-            System.out.println("查询结果: " + users.size() + " 条记录");
-            return users;
+            // 20250904 - 增加工作负载，使响应时间与延迟匹配
+            // 1. 使用缓存服务处理数据
+            String cacheKey = "users_" + limit + "_" + offset;
+            List<User> cachedUsers = userCacheService.getUsersWithCache(cacheKey, users);
+            
+            // 2. 使用数据处理器增强数据
+            List<User> processedUsers = userDataProcessor.processUserData(cachedUsers);
+            
+            // System.out.println("查询结果: " + processedUsers.size() + " 条记录");
+            return processedUsers;
             
         } catch (Exception e) {
             System.err.println("直接SQL执行失败，回退到Repository方法: " + e.getMessage());

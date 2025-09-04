@@ -1,0 +1,147 @@
+测试环境：
+dguard: DGUARD-20250828_193111_329  ,并开启info日志，打印金科和frank提供的统计信息
+
+测试场景：
+
+直连：
+
+jmeter: 4ms  dbquery :1.57ms
+
+ 
+by pass：
+
+jmeter:  5ms  dbquery:1.76ms  
+
+
+全功能 （审计）：
+
+jmeter :10ms  dbquery:6.437 ms
+
+
+frank打印的统计信息:
+
+create	20786	58881	0.353017102	
+exec	12613	58880	0.214215353
+next	1573	58880	0.026715353
+result	151909	1236480	2.579976223	
+commit	8396	58880	0.142595109	
+合计			            3.1177924	
+
+jingke打印的统计信息:
+
+create	19145.9	59272	0.323017	
+exec	4099	59272	0.193563	
+next	357	    59272	0.0181004	
+process	145063	1244712	2.447	 
+commit	8067.52	59271	0.136112	
+合计			            3.066195008	
+
+
+
+
+全功能 （审计+脱敏）：
+
+jmeter :11ms  dbquery:7.8ms
+
+frank打印的统计信息：
+
+create	13269	33748	0.393178855
+exec	8331	33747	0.246866388
+next	992	    33747	0.029395205
+prcess	104725	708687	3.103238806
+commit	4977	33747	0.147479776
+合计			            3.920159031
+
+
+
+jinke打印的统计信息:
+
+create	19145.9	59272	0.361486	
+exec	4099	59272	0.223833	
+next	357	    59272	0.0181004	
+process	145063	1244712	2.988132	 
+commit	8067.52	59271	0.0133333	
+合计                     3.6048847
+
+			           	
+
+
+
+
+
+
+
+
+
+仅审计
+
+datag_session_start(Count: 12, TotalTime(ms): 34, AvgTime(ms): 2)
+datag_session_close(Count: 0, TotalTime(ms): 0, AvgTime(ms): N/A)
+datag_stmt_execute(Count: 0, TotalTime(ms): 0, AvgTime(ms): N/A)
+datag_pstmt_create(Count: 58881, TotalTime(ms): 20786, AvgTime(ms): 0)
+datag_pstmt_execute(Count: 58880, TotalTime(ms): 12613, AvgTime(ms): 0)
+datag_pstmt_close(Count: 58880, TotalTime(ms): 796, AvgTime(ms): 0)
+datag_resultset_next(Count: 58880, TotalTime(ms): 1573, AvgTime(ms): 0)
+datag_resultset_process(Count: 1236480, TotalTime(ms): 151909, AvgTime(ms): 0)
+datag_stmt_execute_commit(Count: 58880, TotalTime(ms): 8396, AvgTime(ms): 0)
+datag_delete_process_session_result(Count: 12, TotalTime(ms): 0, AvgTime(ms): 0)
+datag_delete_process_stmt_result(Count: 117761, TotalTime(ms): 1242, AvgTime(ms): 0)
+datag_delete_process_resultset_result(Count: 1236480, TotalTime(ms): 10805, AvgTime(ms): 0)
+2025-08-28 12:21:03.995587 [info ] [8452:140155298772736] datag_api_client.cpp[100]: UploadLogs(): PostLogs OK: type: AUDIT, size: 626
+
+
+
+
+
+2025-08-28 12:21:03.996110 [info ] [8452:140155298772736] local_config_manager.cpp[68]: Dataguard Metrics Report -> 
+--- API Call Metrics ---
+API: datag_session_start(Count: 12, TotalTime(ms): 32.844, AvgTime(ms): 2.737)
+API: datag_session_close(Count: 0)
+API: datag_stmt_execute(Count: 0)
+API: datag_pstmt_create(Count: 59272, TotalTime(ms): 19145.9, AvgTime(ms): 0.323017)
+API: datag_pstmt_execute(Count: 59272, TotalTime(ms): 11472.9, AvgTime(ms): 0.193563)
+API: datag_pstmt_close(Count: 59271, TotalTime(ms): 387.516, AvgTime(ms): 0.00653804)
+API: datag_resultset_next(Count: 59272, TotalTime(ms): 1072.85, AvgTime(ms): 0.0181004)
+API: datag_resultset_process(Count: 1244712, TotalTime(ms): 145063, AvgTime(ms): 0.116543)
+API: datag_stmt_execute_commit(Count: 59271, TotalTime(ms): 8067.52, AvgTime(ms): 0.136112)
+API: datag_delete_process_session_result(Count: 12, TotalTime(ms): 0.053, AvgTime(ms): 0.00441667)
+API: datag_delete_process_stmt_result(Count: 118544, TotalTime(ms): 445.399, AvgTime(ms): 0.00375725)
+API: datag_delete_process_resultset_result(Count: 1244712, TotalTime(ms): 4570.09, AvgTime(ms): 0.0036716)
+
+
+
+
+
+
+
+
+脱敏
+
+
+datag_session_start(Count: 12, TotalTime(ms): 29, AvgTime(ms): 2)
+datag_session_close(Count: 0, TotalTime(ms): 0, AvgTime(ms): N/A)
+datag_stmt_execute(Count: 0, TotalTime(ms): 0, AvgTime(ms): N/A)
+datag_pstmt_create(Count: 33748, TotalTime(ms): 13269, AvgTime(ms): 0)
+datag_pstmt_execute(Count: 33747, TotalTime(ms): 8331, AvgTime(ms): 0)
+datag_pstmt_close(Count: 33747, TotalTime(ms): 446, AvgTime(ms): 0)
+datag_resultset_next(Count: 33747, TotalTime(ms): 992, AvgTime(ms): 0)
+datag_resultset_process(Count: 708687, TotalTime(ms): 104725, AvgTime(ms): 0)
+datag_stmt_execute_commit(Count: 33747, TotalTime(ms): 4977, AvgTime(ms): 0)
+datag_delete_process_session_result(Count: 12, TotalTime(ms): 0, AvgTime(ms): 0)
+datag_delete_process_stmt_result(Count: 67495, TotalTime(ms): 617, AvgTime(ms): 0)
+datag_delete_process_resultset_result(Count: 708687, TotalTime(ms): 6636, AvgTime(ms): 0)
+2025-08-28 12:39:56.775112 [info ] [8636:140256108078848] datag_api_client.cpp[100]: UploadLogs(): PostLogs OK: type: AUDIT, size: 484
+2025-08-28 12:39:56.775435 [info ] [8636:140256108078848] local_config_manager.cpp[68]: Dataguard Metrics Report -> 
+--- API Call Metrics ---
+API: datag_session_start(Count: 12, TotalTime(ms): 29.419, AvgTime(ms): 2.45158)
+API: datag_session_close(Count: 0)
+API: datag_stmt_execute(Count: 0)
+API: datag_pstmt_create(Count: 33862, TotalTime(ms): 12240.6, AvgTime(ms): 0.361486)
+API: datag_pstmt_execute(Count: 33862, TotalTime(ms): 7579.43, AvgTime(ms): 0.223833)
+API: datag_pstmt_close(Count: 33861, TotalTime(ms): 223.557, AvgTime(ms): 0.0066022)
+API: datag_resultset_next(Count: 33862, TotalTime(ms): 614.364, AvgTime(ms): 0.0181432)
+API: datag_resultset_process(Count: 711087, TotalTime(ms): 101182, AvgTime(ms): 0.142292)
+API: datag_stmt_execute_commit(Count: 33861, TotalTime(ms): 4866.9, AvgTime(ms): 0.143732)
+API: datag_delete_process_session_result(Count: 12, TotalTime(ms): 0.16, AvgTime(ms): 0.0133333)
+API: datag_delete_process_stmt_result(Count: 67724, TotalTime(ms): 255.153, AvgTime(ms): 0.00376754)
+API: datag_delete_process_resultset_result(Count: 711087, TotalTime(ms): 2912.47, AvgTime(ms): 0.00409579)

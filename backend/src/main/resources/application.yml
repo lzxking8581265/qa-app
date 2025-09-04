@@ -17,11 +17,11 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false  # 20250904 - 禁用Hibernate SQL日志输出
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
-        format_sql: true
+        format_sql: false  # 20250904 - 禁用SQL格式化输出
         
   security:
     user:
@@ -31,10 +31,10 @@ spring:
 # 日志配置
 logging:
   level:
-    com.example.api: DEBUG
-    org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.example.api: INFO  # 20250904 - 改为INFO级别
+    org.springframework.security: INFO  # 20250904 - 改为INFO级别
+    org.hibernate.SQL: WARN  # 20250904 - 改为WARN级别，禁用SQL日志
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN  # 20250904 - 改为WARN级别
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
@@ -61,7 +61,7 @@ management:
 app:
   performance:
     monitoring:
-      enabled: true  # 是否启用性能监控
+      enabled: false  # 是否启用性能监控 - 已禁用
       slow-query-threshold: 100  # 慢查询阈值(毫秒)
-      log-slow-queries: true     # 是否记录慢查询日志
-      log-performance-metrics: true  # 是否在响应中包含性能指标
+      log-slow-queries: false     # 是否记录慢查询日志 - 已禁用
+      log-performance-metrics: false  # 是否在响应中包含性能指标 - 已禁用

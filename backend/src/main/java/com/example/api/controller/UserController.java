@@ -71,14 +71,15 @@ public class UserController {
             org.springframework.security.core.Authentication auth = 
                 org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
             if (auth != null) {
-                System.out.println("=== 认证状态检查 ===");
-                System.out.println("认证状态: " + auth.isAuthenticated());
-                System.out.println("用户名: " + auth.getName());
-                System.out.println("权限: " + auth.getAuthorities());
-                System.out.println("==================");
+                // 20250904 - 注释掉认证状态调试日志
+                // System.out.println("=== 认证状态检查 ===");
+                // System.out.println("认证状态: " + auth.isAuthenticated());
+                // System.out.println("用户名: " + auth.getName());
+                // System.out.println("权限: " + auth.getAuthorities());
+                // System.out.println("==================");
             }
         } catch (Exception e) {
-            System.out.println("获取认证信息时出错: " + e.getMessage());
+            // System.out.println("获取认证信息时出错: " + e.getMessage());
         }
         
         // 参数验证
@@ -101,7 +102,8 @@ public class UserController {
             System.out.println("使用PreparedStatement方式查询");
             users = userService.findLimitedUsers(limit, offset);
         } else {
-            System.out.println("使用直接SQL方式查询（不使用PreparedStatement）");
+            // 20250904 - 注释掉调试日志
+            // System.out.println("使用直接SQL方式查询（不使用PreparedStatement）");
             users = userService.findLimitedUsersWithoutPrepStmt(limit, offset);
         }
         

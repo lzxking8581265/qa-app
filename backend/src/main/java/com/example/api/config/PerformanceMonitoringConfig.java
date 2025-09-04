@@ -14,7 +14,7 @@ public class PerformanceMonitoringConfig {
     /**
      * 是否启用性能监控
      */
-    private boolean enabled = true;
+    private boolean enabled = false;
     
     /**
      * 慢查询阈值(毫秒)
@@ -24,12 +24,12 @@ public class PerformanceMonitoringConfig {
     /**
      * 是否记录慢查询日志
      */
-    private boolean logSlowQueries = true;
+    private boolean logSlowQueries = false;
     
     /**
      * 是否在响应中包含性能指标
      */
-    private boolean logPerformanceMetrics = true;
+    private boolean logPerformanceMetrics = false;
     
     // 构造函数
     public PerformanceMonitoringConfig() {}
