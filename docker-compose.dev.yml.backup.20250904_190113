@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: registry.cn-beijing.aliyuncs.com/dcap-test-images/api-recorder-mysql:20250825_183028
+    container_name: api-recorder-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: first@YD
+      MYSQL_DATABASE: api_recorder
+      MYSQL_USER: api_user
+      MYSQL_PASSWORD: api_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - api-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pfirst@YD"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  backend:
+    image: registry.cn-beijing.aliyuncs.com/dcap-test-images/api-recorder-backend:20250825_183028
+    container_name: api-recorder-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/api_recorder?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: first@YD
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: true
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - api-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  frontend:
+    image: registry.cn-beijing.aliyuncs.com/dcap-test-images/api-recorder-frontend:20250825_183028
+    container_name: api-recorder-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"  # 开发环境也使用80端口，通过nginx代理
+    depends_on:
+      - backend
+    networks:
+      - api-network
+
+networks:
+  api-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local

@@ -39,7 +39,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private UserRepository userRepository;
 
     /**
-     * 密码编码器 - 临时使用明文编码器进行测试
+     * 密码编码器 - 使用明文编码器（简化测试）
      */
     @Bean
     public PasswordEncoder passwordEncoder() {

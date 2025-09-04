@@ -107,7 +107,11 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 初始化认证状态
   const initAuth = async () => {
-    await verifyToken()
+    try {
+      await verifyToken()
+    } catch (error) {
+      console.error('初始化认证状态失败:', error)
+    }
   }
 
   // 获取认证头

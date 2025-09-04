@@ -22,6 +22,9 @@ public class MonitorController {
     @Autowired
     private AsyncDelayInterceptor asyncDelayInterceptor;
     
+    @Autowired
+    private UserCacheService userCacheService;
+    
     /**
      * 获取异步队列状态
      */
@@ -44,6 +47,27 @@ public class MonitorController {
     }
     
     /**
+     * 获取缓存状态
+     */
+    @GetMapping("/cache-status")
+    public ResponseEntity<Map<String, Object>> getCacheStatus() {
+        Map<String, Object> status = new HashMap<>();
+        
+        try {
+            Map<String, Object> cacheStats = userCacheService.getCacheStatistics();
+            status.put("status", "success");
+            status.put("cacheStatistics", cacheStats);
+            status.put("timestamp", System.currentTimeMillis());
+        } catch (Exception e) {
+            status.put("status", "error");
+            status.put("message", "获取缓存状态失败: " + e.getMessage());
+            status.put("timestamp", System.currentTimeMillis());
+        }
+        
+        return ResponseEntity.ok(status);
+    }
+    
+    /**
      * 健康检查
      */
     @GetMapping("/health")
@@ -53,6 +77,7 @@ public class MonitorController {
         health.put("service", "API Recorder");
         health.put("timestamp", System.currentTimeMillis());
         health.put("asyncQueueEnabled", true);
+        health.put("workloadEnhanced", true);
         
         return ResponseEntity.ok(health);
     }

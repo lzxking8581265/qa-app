@@ -1,22 +1,42 @@
 <template>
   <div id="app">
-    <router-view />
+    <router-view v-if="!hasError" />
+    <div v-else class="error-container">
+      <h2>页面加载失败</h2>
+      <p>请刷新页面重试</p>
+      <button @click="reloadPage">刷新页面</button>
+    </div>
   </div>
 </template>
 
 <script>
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useAuthStore } from './stores/auth'
 
 export default {
   name: 'App',
   setup() {
     const authStore = useAuthStore()
+    const hasError = ref(false)
     
     onMounted(async () => {
-      // 初始化认证状态
-      await authStore.initAuth()
+      try {
+        // 初始化认证状态
+        await authStore.initAuth()
+      } catch (error) {
+        console.error('初始化认证状态失败:', error)
+        hasError.value = true
+      }
     })
+    
+    const reloadPage = () => {
+      window.location.reload()
+    }
+    
+    return {
+      hasError,
+      reloadPage
+    }
   }
 }
 </script>
@@ -37,5 +57,37 @@ export default {
 
 body {
   background-color: #f5f5f5;
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+}
+
+.error-container h2 {
+  color: #f56c6c;
+  margin-bottom: 10px;
+}
+
+.error-container p {
+  color: #606266;
+  margin-bottom: 20px;
+}
+
+.error-container button {
+  padding: 10px 20px;
+  background-color: #409eff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.error-container button:hover {
+  background-color: #66b1ff;
 }
 </style>

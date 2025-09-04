@@ -409,4 +409,47 @@ public class UserController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    /**
+     * 获取金融业务复杂查询结果
+     * 20250904 - 新增金融业务复杂查询接口
+     */
+    @GetMapping("/financial-complex")
+    public ResponseEntity<?> getFinancialComplexUsers(
+            @RequestParam(defaultValue = "100") int limit,
+            @RequestParam(defaultValue = "0") int offset) {
+        
+        try {
+            // 参数验证
+            if (limit <= 0 || limit > 1000) {
+                return ResponseEntity.badRequest().build();
+            }
+            if (offset < 0) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            // 调用复杂查询
+            List<User> users = userService.findLimitedUsersWithoutPrepStmt(limit, offset);
+            
+            // 转换为DTO
+            List<UserDto> userDtos = users.stream()
+                    .map(UserDto::fromEntity)
+                    .collect(Collectors.toList());
+            
+            // 构建响应
+            Map<String, Object> response = new HashMap<>();
+            response.put("users", userDtos);
+            response.put("total", users.size());
+            response.put("limit", limit);
+            response.put("offset", offset);
+            response.put("timestamp", LocalDateTime.now());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "查询失败: " + e.getMessage());
+            return ResponseEntity.badRequest().body(errorResponse);
+        }
+    }
 }

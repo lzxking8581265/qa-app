@@ -5,6 +5,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.Pattern;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 用户实体类
@@ -78,6 +79,16 @@ public class User {
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    // 20250904 - 添加关联关系，用于复杂查询
+    @OneToMany(mappedBy = "userId", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<UserRole> roles;
+    
+    @OneToMany(mappedBy = "userId", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<UserPermission> permissions;
+    
+    @OneToMany(mappedBy = "userId", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<UserLoginLog> loginLogs;
     
     // 血型枚举
     public enum BloodType {
@@ -247,6 +258,31 @@ public class User {
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+    
+    // 20250904 - 关联关系的Getter和Setter
+    public List<UserRole> getRoles() {
+        return roles;
+    }
+    
+    public void setRoles(List<UserRole> roles) {
+        this.roles = roles;
+    }
+    
+    public List<UserPermission> getPermissions() {
+        return permissions;
+    }
+    
+    public void setPermissions(List<UserPermission> permissions) {
+        this.permissions = permissions;
+    }
+    
+    public List<UserLoginLog> getLoginLogs() {
+        return loginLogs;
+    }
+    
+    public void setLoginLogs(List<UserLoginLog> loginLogs) {
+        this.loginLogs = loginLogs;
     }
     
     @PreUpdate

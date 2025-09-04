@@ -158,8 +158,9 @@ public class UserService {
             // 通过注入的EntityManager来获取
             javax.persistence.EntityManager em = entityManager;
             
-            String sql = "SELECT * FROM users ORDER BY id ASC LIMIT " + limit + " OFFSET " + offset;
-            // System.out.println("直接执行SQL: " + sql);
+            // 20250904 - 创建复杂的单次SQL查询，增加查询复杂度但不增加SQL访问次数
+            String sql = buildComplexUserQuery(limit, offset);
+            // System.out.println("复杂SQL查询: " + sql);
             
             javax.persistence.Query query = em.createNativeQuery(sql, User.class);
             @SuppressWarnings("unchecked")
@@ -183,7 +184,107 @@ public class UserService {
             return userRepository.findLimitedUsers(limit, offset);
         }
     }
-
+    
+    /**
+     * 构建复杂的用户查询SQL
+     * 20250904 - 创建复杂的单次SQL查询，增加查询复杂度
+     * @param limit 限制数量
+     * @param offset 偏移量
+     * @return 复杂SQL查询语句
+     */
+    private String buildComplexUserQuery(int limit, int offset) {
+        return "SELECT u.*, " +
+               "CASE WHEN rp.overall_risk_score IS NULL THEN 50.0 " +
+               "     WHEN rp.overall_risk_score <= 30 THEN 100.0 " +
+               "     WHEN rp.overall_risk_score <= 60 THEN 75.0 " +
+               "     WHEN rp.overall_risk_score <= 80 THEN 50.0 " +
+               "     ELSE 25.0 END as risk_score, " +
+               "COALESCE(rp.risk_level, 'MEDIUM') as risk_level, " +
+               "CASE WHEN rp.kyc_status = 'VERIFIED' AND rp.aml_status = 'CLEAR' AND rp.sanctions_check = 'CLEAR' THEN 100 " +
+               "     WHEN rp.kyc_status = 'VERIFIED' AND rp.aml_status = 'CLEAR' THEN 80 " +
+               "     WHEN rp.kyc_status = 'VERIFIED' THEN 60 " +
+               "     WHEN rp.kyc_status = 'PENDING' THEN 40 " +
+               "     ELSE 20 END as compliance_score, " +
+               "COALESCE(account_stats.total_balance, 0) as total_balance, " +
+               "COALESCE(account_stats.account_count, 0) as account_count, " +
+               "COALESCE(account_stats.avg_balance, 0) as avg_balance, " +
+               "COALESCE(transaction_stats.transaction_count_30d, 0) as transaction_count_30d, " +
+               "COALESCE(transaction_stats.total_amount_30d, 0) as total_amount_30d, " +
+               "COALESCE(transaction_stats.avg_transaction_amount, 0) as avg_transaction_amount, " +
+               "CASE WHEN transaction_stats.suspicious_count > 0 THEN 'HIGH' " +
+               "     WHEN transaction_stats.high_value_count > 5 THEN 'MEDIUM' " +
+               "     WHEN transaction_stats.high_value_count > 0 THEN 'LOW' " +
+               "     ELSE 'NONE' END as suspicious_activity_level, " +
+               "CASE WHEN rp.risk_level = 'LOW' AND account_stats.total_balance > 1000000 THEN 1 " +
+               "     WHEN rp.risk_level = 'LOW' AND account_stats.total_balance > 100000 THEN 2 " +
+               "     WHEN rp.risk_level = 'MEDIUM' AND account_stats.total_balance > 500000 THEN 3 " +
+               "     WHEN rp.risk_level = 'LOW' THEN 4 " +
+               "     WHEN rp.risk_level = 'MEDIUM' THEN 5 " +
+               "     WHEN rp.risk_level = 'HIGH' THEN 6 " +
+               "     ELSE 7 END as customer_priority, " +
+               "CASE WHEN rp.kyc_status = 'EXPIRED' OR rp.kyc_status = 'REJECTED' THEN 1 " +
+               "     WHEN rp.aml_status = 'FLAGGED' OR rp.aml_status = 'BLOCKED' THEN 1 " +
+               "     WHEN rp.sanctions_check = 'FLAGGED' THEN 1 " +
+               "     WHEN rp.pep_status = 'YES' THEN 1 " +
+               "     WHEN rp.adverse_media = 'FOUND' THEN 1 " +
+               "     WHEN transaction_stats.suspicious_count > 3 THEN 1 " +
+               "     ELSE 0 END as requires_review, " +
+               "CASE WHEN account_stats.total_balance > 10000000 THEN 'VIP' " +
+               "     WHEN account_stats.total_balance > 1000000 THEN 'PREMIUM' " +
+               "     WHEN account_stats.total_balance > 100000 THEN 'GOLD' " +
+               "     WHEN account_stats.total_balance > 10000 THEN 'SILVER' " +
+               "     ELSE 'BASIC' END as customer_tier, " +
+               "COUNT(*) OVER() as total_customers, " +
+               "ROW_NUMBER() OVER (ORDER BY " +
+               "     CASE WHEN rp.risk_level = 'LOW' AND account_stats.total_balance > 1000000 THEN 1 " +
+               "          WHEN rp.risk_level = 'LOW' AND account_stats.total_balance > 100000 THEN 2 " +
+               "          WHEN rp.risk_level = 'MEDIUM' AND account_stats.total_balance > 500000 THEN 3 " +
+               "          WHEN rp.risk_level = 'LOW' THEN 4 " +
+               "          WHEN rp.risk_level = 'MEDIUM' THEN 5 " +
+               "          WHEN rp.risk_level = 'HIGH' THEN 6 " +
+               "          ELSE 7 END, " +
+               "     account_stats.total_balance DESC, " +
+               "     u.created_at DESC) as customer_rank " +
+               "FROM users u " +
+               "LEFT JOIN customer_risk_profiles rp ON u.id = rp.user_id " +
+               "LEFT JOIN (SELECT a.user_id, COUNT(*) as account_count, SUM(a.balance) as total_balance, " +
+               "                 AVG(a.balance) as avg_balance, MAX(a.balance) as max_balance, " +
+               "                 MIN(a.balance) as min_balance " +
+               "          FROM bank_accounts a WHERE a.status = 'ACTIVE' GROUP BY a.user_id) account_stats " +
+               "     ON u.id = account_stats.user_id " +
+               "LEFT JOIN (SELECT t.user_id, COUNT(*) as transaction_count_30d, SUM(t.amount) as total_amount_30d, " +
+               "                 AVG(t.amount) as avg_transaction_amount, " +
+               "                 SUM(CASE WHEN t.is_suspicious = true THEN 1 ELSE 0 END) as suspicious_count, " +
+               "                 SUM(CASE WHEN t.is_high_value = true THEN 1 ELSE 0 END) as high_value_count, " +
+               "                 MAX(t.created_at) as last_transaction_date " +
+               "          FROM bank_transactions t " +
+               "          WHERE t.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND t.status = 'COMPLETED' " +
+               "          GROUP BY t.user_id) transaction_stats ON u.id = transaction_stats.user_id " +
+               "WHERE u.enabled = true " +
+               "AND (u.username IS NOT NULL AND LENGTH(u.username) >= 3) " +
+               "AND (u.password IS NOT NULL AND LENGTH(u.password) >= 6) " +
+               "AND u.username NOT LIKE '%test%' " +
+               "AND u.username NOT LIKE '%demo%' " +
+               "AND u.username NOT LIKE '%temp%' " +
+               "AND u.created_at >= DATE_SUB(NOW(), INTERVAL 3 YEAR) " +
+               "AND (u.email IS NULL OR u.email REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\\\.[A-Za-z]{2,}$') " +
+               "AND (u.phone IS NULL OR u.phone REGEXP '^1[3-9]\\\\d{9}$') " +
+               "AND account_stats.user_id IS NOT NULL " +
+               "AND (rp.risk_level IS NULL OR rp.risk_level != 'CRITICAL' OR account_stats.total_balance > 10000000) " +
+               "ORDER BY " +
+               "     CASE WHEN rp.risk_level = 'LOW' AND account_stats.total_balance > 1000000 THEN 1 " +
+               "          WHEN rp.risk_level = 'LOW' AND account_stats.total_balance > 100000 THEN 2 " +
+               "          WHEN rp.risk_level = 'MEDIUM' AND account_stats.total_balance > 500000 THEN 3 " +
+               "          WHEN rp.risk_level = 'LOW' THEN 4 " +
+               "          WHEN rp.risk_level = 'MEDIUM' THEN 5 " +
+               "          WHEN rp.risk_level = 'HIGH' THEN 6 " +
+               "          ELSE 7 END, " +
+               "     account_stats.total_balance DESC, " +
+               "     u.created_at DESC, " +
+               "     u.id ASC " +
+               "LIMIT " + limit + " OFFSET " + offset;
+    }
+    
     /**
      * 更新用户信息
      */

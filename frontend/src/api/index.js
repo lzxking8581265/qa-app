@@ -85,4 +85,32 @@ api.interceptors.response.use(
   }
 )
 
+// 金融业务API
+export const financialApi = {
+  // 获取金融复杂查询结果
+  getFinancialComplexUsers: (params) => api.get('/users/financial-complex', { params }),
+  
+  // 生成测试数据
+  generateTestData: (data) => api.post('/api/test-data/generate', data),
+  
+  // 简化版生成测试数据
+  generateSimpleTestData: (data) => api.post('/api/test-data/generate-simple', data),
+  
+  // 专门为复杂查询优化的数据生成
+  generateForComplexQuery: (data) => api.post('/api/test-data/generate-for-complex-query', data),
+  
+  // 调试数据接口
+  debugData: () => api.get('/api/test-data/debug-data'),
+  
+  // 获取客户统计
+  getCustomerStats: () => api.get('/users/stats'),
+  
+  // 风险客户相关接口
+  getHighRiskCustomers: (params) => api.get('/risk-customers/high-risk', { params }),
+  getCustomersRequiringReview: (params) => api.get('/risk-customers/requires-review', { params }),
+  getVipCustomers: (params) => api.get('/risk-customers/vip', { params }),
+  getSuspiciousCustomers: (params) => api.get('/risk-customers/suspicious', { params }),
+  getRiskCustomerStats: () => api.get('/risk-customers/stats')
+}
+
 export default api

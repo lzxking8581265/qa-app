@@ -14,6 +14,8 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./mysql/init_complete.sql:/docker-entrypoint-initdb.d/01_init_complete.sql
+      - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf
     networks:
       api-network:
         ipv4_address: 174.20.0.10

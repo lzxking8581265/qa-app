@@ -35,6 +35,60 @@ const routes = [
     name: 'Users',
     component: () => import('../views/Users.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/financial-dashboard',
+    name: 'FinancialDashboard',
+    component: () => import('../views/FinancialDashboard.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/customer-management',
+    name: 'CustomerManagement',
+    component: () => import('../views/CustomerManagement.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/risk-monitoring',
+    name: 'RiskMonitoring',
+    component: () => import('../views/RiskMonitoring.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/complex-query-demo',
+    name: 'ComplexQueryDemo',
+    component: () => import('../views/ComplexQueryDemo.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/test-data-config',
+    name: 'TestDataConfig',
+    component: () => import('../views/TestDataConfig.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/simple-test-data-config',
+    name: 'SimpleTestDataConfig',
+    component: () => import('../views/SimpleTestDataConfig.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/risk-customer-list',
+    name: 'RiskCustomerList',
+    component: () => import('../views/RiskCustomerList.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/test-risk',
+    name: 'TestRisk',
+    component: () => import('../views/TestRiskPage.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/test',
+    name: 'TestPage',
+    component: () => import('../views/TestPage.vue'),
+    meta: { requiresAuth: false }
   }
 ]
 

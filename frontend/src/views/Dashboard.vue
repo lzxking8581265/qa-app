@@ -26,6 +26,34 @@
             <el-icon><User /></el-icon>
             <span>用户管理</span>
           </el-menu-item>
+          <el-menu-item index="/financial-dashboard">
+            <el-icon><Money /></el-icon>
+            <span>金融仪表板</span>
+          </el-menu-item>
+          <el-menu-item index="/customer-management">
+            <el-icon><UserFilled /></el-icon>
+            <span>客户管理</span>
+          </el-menu-item>
+          <el-menu-item index="/risk-monitoring">
+            <el-icon><Warning /></el-icon>
+            <span>风险监控</span>
+          </el-menu-item>
+          <el-menu-item index="/complex-query-demo">
+            <el-icon><Document /></el-icon>
+            <span>复杂查询演示</span>
+          </el-menu-item>
+          <el-menu-item index="/simple-test-data-config">
+            <el-icon><Setting /></el-icon>
+            <span>测试数据配置</span>
+          </el-menu-item>
+          <el-menu-item index="/risk-customer-list">
+            <el-icon><Warning /></el-icon>
+            <span>风险客户审查</span>
+          </el-menu-item>
+          <el-menu-item index="/test-risk">
+            <el-icon><Warning /></el-icon>
+            <span>测试风险页面</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       
@@ -152,6 +180,7 @@ import { ref, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { DataBoard, Document, User, Money, UserFilled, Warning, ArrowDown, Setting, Calendar, DataLine } from '@element-plus/icons-vue'
 import api from '../api'
 
 const authStore = useAuthStore()
